@@ -1,0 +1,16 @@
+import numpy as np
+import pandas as pd
+np.loadtxt('airfoil_self_noise.dat', delimiter = None)
+data = np.loadtxt('airfoil_self_noise.dat', delimiter = None)
+data[0]
+d = {'Frequency':data[:,0], 'Angle of Attack':data[:,1], 'Chord length':data[:,2], 'Free stream velocity':data[:,3], 'Suction Side displacement thickness':data[:,4], 'Scaled sound Pressure':data[:,5]}
+df = pd.DataFrame(data=d)
+df
+df.mean()
+df.var()
+df.median()
+df.kurt()
+df.skew()
+df.min()
+df.max()
+df.max() - df.min()
