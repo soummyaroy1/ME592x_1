@@ -1,0 +1,3 @@
+	I = imread('sudoku-original.png');
+  image(I)
+  imhist(I)
