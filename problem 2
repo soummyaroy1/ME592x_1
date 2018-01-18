@@ -1,0 +1,90 @@
+% Part 1
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+%matplotlib inline
+import warnings
+warnings.filterwarnings('ignore')
+df = pd.read_csv('energydata_complete.csv')
+df.head()
+df = df.reset_index()
+fig, ax = plt.subplots()
+ax.plot(df['index'], df['Energy Consumption'], 'b-', label='Energy Consumption Plot')
+plt.xlabel('Period')
+plt.ylabel('Energy Consumption')
+plt.title('Energy Consumption for whole period')
+df1 = df.iloc[42:1050,:]
+fig, ax = plt.subplots()
+ax.plot(df1['index'], df1['Energy Consumption'], 'b-', label='Energy Consumption Plot')
+plt.xlabel('Period')
+plt.ylabel('Energy Consumption')
+plt.title('Energy Consumption for first One complete week')
+df['date1'] = df['date'].str.partition(' ')[0]
+df['time'] = df['date'].str.partition(' ')[2]
+df['hours'] = df['time'].str.partition(':')[0]
+df['mins'] = df['time'].str.partition(':')[2]
+df['timevar'] = df['date1'] + '/' + df['hours']
+dfnew = df[['timevar', 'mins', 'Energy Consumption']]
+dfnew.head()
+dfnew = dfnew.set_index(['timevar', 'mins'])
+dfnew = dfnew.unstack()
+dfnew['hourly energy consumption'] = dfnew.sum(axis=1)
+dfnew = dfnew.reset_index()
+dfnew['date'] = dfnew['timevar'].str.rpartition('/')[0]
+dfnew.head()
+dfnew['m'] = (dfnew['date'].str.partition('/')[0]).astype(int)
+dfnew['d'] = ((dfnew['date'].str.partition('/')[2]).str.partition('/')[0]).astype(int)
+dfnew['y'] = (dfnew['date'].str.rpartition('/')[2]).astype(int)
+dfnew['Hours'] = (dfnew['timevar'].str.rpartition('/')[2]).astype(int)
+dfnew['y1'] = np.where(dfnew['m'] < 3, dfnew['y'] - 1, dfnew['y'])
+dfnew['a'] = ( 23*dfnew['m']//9 + dfnew['d'] + 4 + dfnew['y'] + dfnew['y1']//4 - dfnew['y1']//100 + dfnew['y1']//400 )
+dfnew['b'] = np.where(dfnew['m'] >= 3, dfnew['a'] - 2, dfnew['a'])
+dfnew['Weekday'] = dfnew['b'] % 7
+dict_day = {0 : 'Sunday', 1 : 'Monday', 2 : 'Tuesday', 3 : 'Wednesday', 4 : 'Thursday', 5 :
+dfnew['Day']=dfnew['Weekday'].apply(lambda x: dict_day[x])
+dfa = dfnew[['date', 'Weekday', 'Hours', 'Day', 'hourly energy consumption']]
+df2 = dfa.iloc[7:175,:]
+df2 = df2.sort_values(by = ['Hours', 'Weekday'], ascending = [True, True])
+df3 = df2[['Hours', 'Weekday', 'hourly energy consumption']]
+df3 = df3.pivot('Hours', 'Weekday', 'hourly energy consumption')
+df3 = df3.rename(index = str, columns = {0 : 'Sunday', 1 : 'Monday', 2 : 'Tuesday', 3 : 'Wednesday', 4 : 'Thursday', 5 : 'Friday', 6 : 'Saturday'})
+import seaborn as sns
+sns.heatmap(df3)
+plt.xlabel('Day of Week')
+plt.ylabel('Hour of Day')
+plt.title('Houly Energy Consumption of Appliances for a Week')
+plt.hist(df['Energy Consumption'])
+plt.xlabel('Energy Consumption')
+plt.ylabel('Frequency')
+plt.title('Histogram of Energy Consumption of Appliances')
+df['hours'] = df['hours'].astype(int)
+df['mins'] = df['mins'].astype(int)
+df['NSM'] = (24*3600) - (df['hours'])*3600 - (df['mins'])*60
+df.head()
+fig, ax = plt.subplots()
+ax.plot(df['NSM'], df['Energy Consumption'], 'b-', label='Energy Consumption Plot')
+plt.xlabel('NSM')
+plt.ylabel('Energy Consumption')
+plt.title('Energy Consumption for whole period')
+fig, ax = plt.subplots()
+ax.plot(df['Press_mm_hg'], df['Energy Consumption'], 'b-', label='Energy Consumption Plot')
+plt.xlabel('Press_mm_hg')
+plt.ylabel('Energy Consumption')
+plt.title('Energy Consumption for whole period')
+dff = df.drop(['index', 'date', 'date1', 'time', 'hours', 'mins', 'timevar'], axis = 1)
+cols = dff.columns.tolist()
+cols = [cols[-1]] + cols[:-2] + [cols[-2]]
+dff = dff[cols]
+X = dff.iloc[:,:-1]
+y = dff.iloc[:, -1]
+from sklearn.cross_validation import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 0)
+from sklearn.linear_model import LinearRegression
+LR = LinearRegression()
+LR.fit(X_train, y_train)
+y_pred = LR.predict(X_test)
+from sklearn.metrics import mean_squared_error
+print('Coefficients: \n', LR.coef_)
+print("Mean squared error: %.2f"
+      % mean_squared_error(y_test, y_pred))
+% Coefficient of Press_mm_hg is high (5th last), however coefficient of NSM (1st) is low. It is inferred that Press_mm_hg is significantly contributing but NSM doesn't.
